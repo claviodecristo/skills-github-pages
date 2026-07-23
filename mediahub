@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JOM Marketing Hub · Versão 1.0</title>
+<style>
+:root { --jom:#107C41; --jom-dark:#0B5E31; --ink:#13223A; --muted:#657387; --line:#DCE5EE; --card:#FFFFFF; }
+* { box-sizing:border-box; }
+html,body { margin:0; padding:0; width:100%; min-height:100%; }
+body { font-family:Arial, Helvetica, sans-serif; color:var(--ink); background:#EEF6F1; }
+.header { background:#fff; border-bottom:1px solid var(--line); padding:16px 18px 14px; }
+.header h1 { margin:0; font-size:26px; line-height:1.15; }
+.header p { margin:7px 0 0; color:var(--muted); font-size:14px; line-height:1.4; }
+.controls { margin-top:13px; }
+.control-row { display:block; margin:8px 0; }
+.group-label { display:block; font-size:12px; font-weight:bold; color:var(--jom-dark); margin:0 0 6px; }
+button { font-family:Arial, Helvetica, sans-serif; -webkit-appearance:none; appearance:none; }
+.chip,.toggle { display:inline-block; margin:3px 3px 3px 0; border:1px solid #C8D7CE; background:#fff; color:var(--ink); padding:9px 12px; border-radius:20px; font-weight:bold; font-size:13px; line-height:1.1; cursor:pointer; }
+.chip.active,.chip:hover { background:var(--jom); color:#fff; border-color:var(--jom); }
+.toggle { border-color:var(--jom); background:rgba(16,124,65,.08); color:var(--jom-dark); }
+.layout { display:block; padding:14px; }
+.card { background:#fff; border:1px solid var(--line); border-radius:18px; box-shadow:0 10px 24px rgba(16,124,65,.08); }
+.map-card { padding:12px; margin-bottom:14px; }
+.map-top { margin-bottom:10px; }
+.map-top h2 { margin:0; font-size:18px; }
+.map-top small { display:block; margin-top:5px; color:var(--muted); font-size:12px; line-height:1.35; }
+.legend { margin-top:9px; font-size:12px; color:var(--muted); }
+.legend span { display:inline-block; margin:3px 10px 3px 0; white-space:nowrap; }
+.ico { display:inline-block; vertical-align:-2px; margin-right:5px; }
+.ico-dot { width:12px; height:12px; border-radius:50%; background:var(--jom); border:2px solid #fff; box-shadow:0 0 0 1px var(--jom); }
+.ico-circle { width:18px; height:18px; border-radius:50%; background:rgba(16,124,65,.12); border:1px solid rgba(16,124,65,.45); }
+.ico-national { width:22px; height:11px; border-radius:12px; background:rgba(16,124,65,.18); border:1px solid rgba(16,124,65,.45); }
+.map-wrap { position:relative; width:100%; height:720px; min-height:520px; max-height:920px; overflow:hidden; border:1px solid #E2EAF1; border-radius:16px; background:#F8FAFC; }
+.base-svg,.coverage-svg { position:absolute; left:0; top:0; width:100%; height:100%; }
+.base-svg { z-index:1; }
+.coverage-svg { z-index:3; pointer-events:none; }
+#markerLayer { position:absolute; left:0; top:0; width:100%; height:100%; z-index:5; }
+.country-shadow { fill:#DCE5ED; opacity:.55; }
+.country { fill:#fff; stroke:#9DAEBD; stroke-width:2.2; }
+.national-cover { fill:rgba(16,124,65,.13); stroke:rgba(16,124,65,.35); stroke-width:1.4; opacity:1; }
+.water-label { fill:#8BABCB; font-size:21px; font-weight:bold; letter-spacing:2px; opacity:.43; }
+.coverage-circle { fill-opacity:.13; stroke-opacity:.45; stroke-width:1.3; }
+.marker { position:absolute; width:20px; height:20px; margin-left:-10px; margin-top:-10px; border:0; background:transparent; padding:0; }
+.marker-pin { display:block; width:16px; height:16px; margin:2px; border-radius:50%; background:currentColor; border:3px solid #fff; box-shadow:0 0 0 1px currentColor,0 3px 8px rgba(0,0,0,.24); }
+.marker.selected .marker-pin { width:20px; height:20px; margin:0; }
+.label { position:absolute; min-width:116px; max-width:170px; background:rgba(255,255,255,.96); border:1px solid rgba(220,229,238,.96); border-radius:11px; padding:7px 9px; font-size:12px; line-height:1.2; box-shadow:0 8px 16px rgba(16,124,65,.08); pointer-events:none; }
+.label .zone { font-weight:bold; color:var(--ink); }
+.label .radio { margin-top:3px; color:var(--muted); }
+.national-note { display:block; position:absolute; left:16px; bottom:16px; width:240px; max-width:calc(100% - 32px); background:rgba(255,255,255,.96); border:1px solid #D7E5DC; border-radius:13px; padding:12px; z-index:8; box-shadow:0 8px 18px rgba(16,124,65,.10); }
+.national-note strong { display:block; color:var(--jom-dark); margin-bottom:5px; }
+.national-note p { margin:0; font-size:12px; color:var(--muted); line-height:1.4; }
+.sidebar { padding:16px; }
+.detail h3 { margin:0 0 8px; font-size:21px; }
+.badge { display:inline-block; padding:4px 9px; border-radius:14px; background:rgba(16,124,65,.10); color:var(--jom-dark); font-size:11px; font-weight:bold; margin:0 5px 5px 0; }
+.priority-alta { background:rgba(16,124,65,.16); color:#0B5E31; }
+.priority-media { background:rgba(183,121,31,.14); color:#8A5A10; }
+.priority-complementar { background:rgba(101,113,135,.12); color:#465364; }
+.detail p { margin:9px 0; font-size:14px; line-height:1.45; }
+.stats { display:table; width:100%; border-spacing:8px; margin:10px -8px 14px; }
+.stat { display:table-cell; width:33.33%; background:#F7FAF8; border:1px solid #DFECE4; border-radius:13px; padding:10px; }
+.stat strong { display:block; font-size:21px; color:var(--jom-dark); }
+.stat span { display:block; font-size:12px; color:var(--muted); }
+.table-mini { width:100%; border-collapse:collapse; margin:12px 0; font-size:13px; }
+.table-mini td { padding:7px 0; border-bottom:1px solid #EEF3F0; vertical-align:top; }
+.table-mini td:first-child { width:36%; color:var(--muted); font-weight:bold; }
+.links { margin-top:12px; }
+.links a,.links span { display:inline-block; margin:4px 4px 4px 0; padding:9px 11px; border-radius:11px; font-size:13px; font-weight:bold; text-decoration:none; border:1px solid #D5E3D9; }
+.links a { background:#fff; color:var(--jom-dark); }
+.links span { background:#F4F7F5; color:#8C9B93; }
+.section-title { margin:18px 0 8px; font-size:13px; font-weight:bold; text-transform:uppercase; letter-spacing:.04em; color:var(--jom-dark); }
+.list { max-height:340px; overflow:auto; padding-right:2px; }
+.list-item { display:block; width:100%; border:1px solid #E0EAE3; border-radius:13px; padding:10px 12px; background:#fff; cursor:pointer; margin-bottom:8px; text-align:left; }
+.list-item:hover { background:#F5FBF7; }
+.list-item strong { display:block; font-size:14px; }
+.list-item small { display:block; color:var(--muted); margin-top:2px; line-height:1.35; }
+.bullet { display:block; float:right; width:12px; height:12px; border-radius:50%; margin-top:3px; }
+.note { margin-top:16px; padding:12px; border-radius:13px; background:#F7FAF8; border:1px solid #DFECE4; color:var(--muted); font-size:12px; line-height:1.45; }
+.footer-note { margin-top:10px; text-align:center; font-size:12px; color:var(--muted); }
+.source-list p { margin:7px 0; font-size:13px; }
+.noscript { background:#fff3cd; border:1px solid #ffecb5; color:#6b4e00; padding:10px 12px; border-radius:10px; margin:10px 0; font-size:13px; }
+@media (min-width:1100px) { .layout { display:table; width:100%; border-spacing:20px 0; } .main-col,.side-col { display:table-cell; vertical-align:top; } .main-col { width:calc(100% - 440px); } .side-col { width:420px; } .map-wrap { height:820px; } }
+@media (max-width:600px) { .header { padding:14px 12px; } .header h1 { font-size:22px; } .layout { padding:10px; } .map-card { padding:10px; } .map-wrap { height:640px; min-height:560px; } .chip,.toggle { font-size:12px; padding:8px 10px; } .label { font-size:10px; min-width:92px; max-width:132px; padding:5px 7px; } .stats { display:block; margin:8px 0 14px; } .stat { display:block; width:100%; margin-bottom:8px; } }
+
+/* iOS robust map-state rendering: filters are applied by CSS classes on body. */
+body .coverage-el, body .marker-el, body .label-el { visibility: visible; opacity: 1; }
+body.state-no-coverage .coverage-el { visibility: hidden !important; opacity: 0 !important; }
+body.state-no-labels .label-el,
+body.state-north-mode .label-el { display: none !important; }
+
+body.state-region-national .coverage-el,
+body.state-region-national .marker-el,
+body.state-region-national .label-el { display: none !important; }
+
+body.state-region-norte .coverage-el:not(.region-norte),
+body.state-region-norte .marker-el:not(.region-norte),
+body.state-region-norte .label-el:not(.region-norte),
+body.state-region-centro .coverage-el:not(.region-centro),
+body.state-region-centro .marker-el:not(.region-centro),
+body.state-region-centro .label-el:not(.region-centro),
+body.state-region-lvt .coverage-el:not(.region-lvt),
+body.state-region-lvt .marker-el:not(.region-lvt),
+body.state-region-lvt .label-el:not(.region-lvt),
+body.state-region-sul .coverage-el:not(.region-sul),
+body.state-region-sul .marker-el:not(.region-sul),
+body.state-region-sul .label-el:not(.region-sul) { display: none !important; }
+
+body.state-objective-notoriedade .coverage-el:not(.obj-notoriedade),
+body.state-objective-notoriedade .marker-el:not(.obj-notoriedade),
+body.state-objective-notoriedade .label-el:not(.obj-notoriedade),
+body.state-objective-drive .coverage-el:not(.obj-drive),
+body.state-objective-drive .marker-el:not(.obj-drive),
+body.state-objective-drive .label-el:not(.obj-drive),
+body.state-objective-locais .coverage-el:not(.obj-locais),
+body.state-objective-locais .marker-el:not(.obj-locais),
+body.state-objective-locais .label-el:not(.obj-locais),
+body.state-objective-aberturas .coverage-el:not(.obj-aberturas),
+body.state-objective-aberturas .marker-el:not(.obj-aberturas),
+body.state-objective-aberturas .label-el:not(.obj-aberturas),
+body.state-objective-national .coverage-el,
+body.state-objective-national .marker-el,
+body.state-objective-national .label-el { display: none !important; }
+
+body.state-north-mode .coverage-el:not(.region-norte),
+body.state-north-mode .marker-el:not(.region-norte),
+body.state-north-mode .label-el:not(.region-norte) { display:none !important; }
+
+#nationalCover { opacity:0 !important; transition:opacity .2s ease; }
+#nationalNote { display:none !important; }
+body.state-show-national #nationalCover { opacity:1 !important; }
+body.state-show-national #nationalNote { display:block !important; }
+
+/* Force Safari/iOS to repaint transformed map layers after state changes. */
+.map-wrap, .base-svg, .coverage-svg, #markerLayer {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+</style>
+
+<style>
+/* ===== Portal JOM v10 ===== */
+body.portal-open { background:#eef6f1; }
+.portal-shell{min-height:100vh}
+.portal-topbar{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--line);padding:10px 14px;display:flex;align-items:center;gap:12px;box-shadow:0 3px 14px rgba(16,124,65,.06)}
+.portal-brand{display:flex;align-items:center;gap:10px;min-width:0}
+.portal-logo{width:52px;height:38px;border-radius:10px;background:var(--jom);color:#fff;font-weight:900;display:flex;align-items:center;justify-content:center;letter-spacing:.5px;font-size:20px;box-shadow:0 5px 14px rgba(16,124,65,.2)}
+.portal-title{font-size:16px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.portal-nav{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.portal-nav button{border:1px solid #d6e3da;background:#fff;color:var(--ink);border-radius:18px;padding:8px 11px;font-weight:700;font-size:12px;cursor:pointer}
+.portal-nav button.active,.portal-nav button:hover{background:var(--jom);color:#fff;border-color:var(--jom)}
+.portal-view{display:none}
+.portal-view.active{display:block}
+#radioView .header{position:relative;top:auto}
+.home-hero{padding:54px 18px 24px;text-align:center;background:linear-gradient(180deg,#fff 0%,#eef6f1 100%)}
+.home-hero .eyebrow{color:var(--jom-dark);font-weight:800;text-transform:uppercase;letter-spacing:.12em;font-size:12px}
+.home-hero h1{font-size:42px;margin:12px auto 10px;line-height:1.08;max-width:800px}
+.home-hero p{max-width:720px;margin:0 auto;color:var(--muted);font-size:17px;line-height:1.55}
+.home-grid{max-width:1180px;margin:0 auto;padding:24px 18px 52px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.home-card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:24px;text-align:left;box-shadow:0 12px 28px rgba(16,124,65,.08);cursor:pointer;transition:transform .18s ease,box-shadow .18s ease;min-height:190px;display:flex;flex-direction:column}
+.home-card:hover{transform:translateY(-3px);box-shadow:0 18px 34px rgba(16,124,65,.13)}
+.home-card .icon{font-size:34px;margin-bottom:18px}
+.home-card h2{margin:0 0 8px;font-size:23px}
+.home-card p{margin:0;color:var(--muted);line-height:1.5}
+.home-card .meta{margin-top:auto;padding-top:18px;color:var(--jom-dark);font-weight:800;font-size:13px}
+.home-card.disabled{cursor:default;opacity:.72;background:#f8faf9}
+.home-card.disabled:hover{transform:none;box-shadow:0 12px 28px rgba(16,124,65,.08)}
+.section-hero{padding:34px 18px 22px;background:#fff;border-bottom:1px solid var(--line)}
+.section-hero .inner{max-width:1180px;margin:auto}
+.section-hero h1{margin:0;font-size:32px}
+.section-hero p{margin:8px 0 0;color:var(--muted);line-height:1.5}
+.media-grid{max-width:1180px;margin:0 auto;padding:24px 18px 52px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.media-card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px;box-shadow:0 10px 24px rgba(16,124,65,.07);display:flex;flex-direction:column;min-height:220px}
+.media-card .brand-icon{width:54px;height:54px;border-radius:16px;background:#f0f7f3;display:flex;align-items:center;justify-content:center;font-size:27px;margin-bottom:16px}
+.media-card h2{margin:0 0 6px;font-size:21px}
+.media-card .handle{color:var(--muted);font-size:14px;margin-bottom:14px;word-break:break-word}
+.media-card .desc{color:var(--muted);line-height:1.45;font-size:14px;margin-bottom:18px}
+.media-card a{margin-top:auto;display:inline-block;text-align:center;background:var(--jom);color:#fff;text-decoration:none;font-weight:800;border-radius:12px;padding:11px 13px}
+.tv-country{max-width:1180px;margin:18px auto 0;padding:0 18px}
+.tv-banner{background:rgba(16,124,65,.09);border:1px solid rgba(16,124,65,.25);border-radius:16px;padding:14px 16px;color:var(--jom-dark);font-weight:700}
+.portal-footer{text-align:center;color:var(--muted);font-size:12px;padding:18px}
+@media(max-width:800px){.home-grid,.media-grid{grid-template-columns:1fr}.home-hero h1{font-size:32px}.portal-topbar{align-items:flex-start}.portal-nav{gap:4px}.portal-nav button{font-size:11px;padding:7px 9px}.portal-title{display:none}}
+@media(max-width:480px){.portal-topbar{padding:9px}.portal-logo{width:46px;height:34px;font-size:18px}.portal-nav{display:grid;grid-template-columns:repeat(3,auto)}.home-hero{padding-top:34px}.home-card{min-height:165px}}
+
+.hub-stats{max-width:1180px;margin:0 auto;padding:22px 18px 0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.hub-stats>div{background:rgba(255,255,255,.82);border:1px solid var(--line);border-radius:18px;padding:18px;text-align:center;box-shadow:0 8px 20px rgba(16,124,65,.06)}
+.hub-stats strong{display:block;font-size:30px;color:var(--jom-dark);line-height:1}
+.hub-stats span{display:block;margin-top:7px;color:var(--muted);font-size:12px;font-weight:700}
+@media(max-width:800px){.hub-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<div class="portal-shell">
+  <div class="portal-topbar">
+    <div class="portal-brand"><div class="portal-logo">JOM</div><div class="portal-title">JOM Marketing Hub</div></div>
+    <nav class="portal-nav" id="portalNav" aria-label="Navegação principal">
+      <button type="button" data-view="homeView" class="active">Início</button>
+      <button type="button" data-view="radioView">Rádio</button>
+      <button type="button" data-view="tvView">Televisão</button>
+      <button type="button" data-view="digitalView">Digital</button>
+      <button type="button" data-view="outdoorView">Outdoor</button>
+    </nav>
+  </div>
+
+  <section id="homeView" class="portal-view active">
+    <div class="home-hero">
+      <div class="eyebrow">Portal do Departamento de Marketing da JOM</div>
+      <h1>Bem-vindo ao JOM Marketing Hub</h1>
+      <p>O portal interno criado para reunir, organizar e disponibilizar os principais recursos, meios e ferramentas de comunicação da marca. Atualmente, pode consultar o JOM Media Hub, com a rede de rádios, canais de televisão e plataformas digitais oficiais da JOM.</p>
+    </div>
+    <div class="hub-stats" aria-label="Resumo da rede">
+      <div><strong>22</strong><span>Rádios regionais</span></div>
+      <div><strong>7</strong><span>Rádios nacionais</span></div>
+      <div><strong>3</strong><span>Canais de televisão</span></div>
+      <div><strong>7</strong><span>Plataformas digitais</span></div>
+    </div>
+    <div class="home-grid">
+      <article class="home-card" data-open="radioView" data-radio-mode="regional"><div class="icon">📡</div><h2>JOM Media Hub</h2><p>Consulte a rede de rádio regional e nacional, os canais de televisão e as plataformas digitais oficiais da JOM.</p><div class="meta">Abrir módulo →</div></article>
+      <article class="home-card" data-open="outdoorView"><div class="icon">🟢</div><h2>Rede de Outdoors</h2><p>Área preparada para integrar posições, formatos, fotografias, estado e lojas apoiadas.</p><div class="meta">Próxima funcionalidade →</div></article>
+      <article class="home-card disabled"><div class="icon">📢</div><h2>Campanhas</h2><p>Campanhas em vigor, folhetos, spots de televisão, rádio e materiais para as lojas.</p><div class="meta">Evolução prevista</div></article>
+      <article class="home-card disabled"><div class="icon">🎨</div><h2>Recursos da Marca</h2><p>Logótipos, manual de identidade, templates e outros recursos institucionais da JOM.</p><div class="meta">Evolução prevista</div></article>
+      <article class="home-card disabled"><div class="icon">📊</div><h2>Indicadores de Marketing</h2><p>Área futura para consulta de indicadores, cobertura e desempenho da comunicação.</p><div class="meta">Evolução prevista</div></article>
+    </div>
+  </section>
+
+  <section id="radioView" class="portal-view">
+
+<header class="header">
+  <h1>JOM Media Hub · Rede de Rádio</h1>
+  <p>Rádios regionais e nacionais utilizadas pela JOM, com leitura territorial e acesso às emissões oficiais.</p>
+  <noscript><div class="noscript">O mapa é visível, mas os filtros precisam de JavaScript. Abra no Safari ou num navegador com JavaScript activo.</div></noscript>
+  <div class="controls">
+    <div class="control-row" id="regionControls">
+      <span class="group-label">Região</span>
+      <button type="button" class="chip active" data-region="Todas">Todas</button>
+      <button type="button" class="chip" data-region="Regionais">Regionais</button>
+      <button type="button" class="chip" data-region="Nacionais">Nacionais</button>
+      <button type="button" class="chip" data-region="Norte">Norte</button>
+      <button type="button" class="chip" data-region="Centro">Centro</button>
+      <button type="button" class="chip" data-region="Lisboa e Vale do Tejo">Lisboa / Vale do Tejo</button>
+      <button type="button" class="chip" data-region="Sul">Sul</button>
+    </div>
+    <div class="control-row" id="objectiveControls">
+      <span class="group-label">Objetivo</span>
+      <button type="button" class="chip active" data-objective="Todos">Todos</button>
+      <button type="button" class="chip" data-objective="Notoriedade">Notoriedade</button>
+      <button type="button" class="chip" data-objective="Drive-to-store">Drive-to-store</button>
+      <button type="button" class="chip" data-objective="Campanhas locais">Campanhas locais</button>
+      <button type="button" class="chip" data-objective="Campanhas nacionais">Campanhas nacionais</button>
+      <button type="button" class="chip" data-objective="Aberturas / remodelações">Aberturas / remodelações</button>
+    </div>
+    <div class="control-row">
+      <button type="button" class="toggle" id="toggleCoverage">Ocultar coberturas</button>
+      <button type="button" class="toggle" id="toggleLabels">Ocultar rótulos</button>
+      <button type="button" class="toggle" id="toggleNorth">Modo leitura Norte</button>
+    </div>
+  </div>
+</header>
+
+<main class="layout">
+  <div class="main-col">
+    <section class="card map-card">
+      <div class="map-top">
+        <h2>Rede rádio nacional e regional</h2>
+        <small>As áreas são estimativas para planeamento de meios; quando há dados públicos de cobertura/concelhos/frequências, o raio foi ajustado à informação disponível.</small>
+        <div class="legend">
+          <span><i class="ico ico-dot"></i> Rádio regional</span>
+          <span><i class="ico ico-circle"></i> Cobertura estimada</span>
+          <span><i class="ico ico-national"></i> Nacional</span>
+        </div>
+      </div>
+      <div class="map-wrap" id="mapWrap">
+        <svg class="base-svg" viewBox="0 0 560 920" preserveAspectRatio="xMidYMid meet" aria-label="Mapa de Portugal Continental">
+          <text x="42" y="255" class="water-label">OCEANO</text>
+          <text x="34" y="287" class="water-label">ATLÂNTICO</text>
+          <path class="country-shadow" d="M110.60,94.90 L167.68,54.93 L231.87,32.00 L271.29,109.01 L364.20,108.82 L391.13,88.96 L482.78,94.46 L526.75,173.35 L454.07,215.93 L452.04,338.65 L426.50,361.67 L420.18,436.01 L352.23,448.96 L415.24,543.25 L371.82,646.59 L426.05,693.36 L404.47,736.12 L346.18,795.10 L359.29,847.18 L296.08,888.00 L213.15,865.88 L131.99,883.20 L156.01,760.11 L141.24,663.39 L70.86,648.89 L33.25,589.28 L45.77,486.31 L108.48,429.21 L119.64,365.64 L152.46,271.05 L148.97,204.41 L117.53,147.92 L110.60,94.90 Z" transform="translate(7,8)"></path>
+          <path class="country" d="M110.60,94.90 L167.68,54.93 L231.87,32.00 L271.29,109.01 L364.20,108.82 L391.13,88.96 L482.78,94.46 L526.75,173.35 L454.07,215.93 L452.04,338.65 L426.50,361.67 L420.18,436.01 L352.23,448.96 L415.24,543.25 L371.82,646.59 L426.05,693.36 L404.47,736.12 L346.18,795.10 L359.29,847.18 L296.08,888.00 L213.15,865.88 L131.99,883.20 L156.01,760.11 L141.24,663.39 L70.86,648.89 L33.25,589.28 L45.77,486.31 L108.48,429.21 L119.64,365.64 L152.46,271.05 L148.97,204.41 L117.53,147.92 L110.60,94.90 Z"></path>
+          <path id="nationalCover" class="national-cover" d="M110.60,94.90 L167.68,54.93 L231.87,32.00 L271.29,109.01 L364.20,108.82 L391.13,88.96 L482.78,94.46 L526.75,173.35 L454.07,215.93 L452.04,338.65 L426.50,361.67 L420.18,436.01 L352.23,448.96 L415.24,543.25 L371.82,646.59 L426.05,693.36 L404.47,736.12 L346.18,795.10 L359.29,847.18 L296.08,888.00 L213.15,865.88 L131.99,883.20 L156.01,760.11 L141.24,663.39 L70.86,648.89 L33.25,589.28 L45.77,486.31 L108.48,429.21 L119.64,365.64 L152.46,271.05 L148.97,204.41 L117.53,147.92 L110.60,94.90 Z"></path>
+        </svg>
+        <svg class="coverage-svg" viewBox="0 0 560 920" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          <g id="coverageGroup">
+            <circle class="coverage-circle coverage-el region-norte obj-drive obj-locais obj-aberturas" data-radio="alto-minho" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" cx="142.79" cy="124.15" r="49.6" style="fill:#107C41;stroke:#107C41;"></circle>
+            <circle class="coverage-circle coverage-el region-norte obj-drive obj-locais obj-aberturas" data-radio="antena-minho" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" cx="206.28" cy="147.62" r="53.85" style="fill:#15803D;stroke:#15803D;"></circle>
+            <circle class="coverage-circle coverage-el region-norte obj-drive obj-locais obj-aberturas" data-radio="antena-minho" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" cx="176.62" cy="148.66" r="31.17" style="fill:#15803D;stroke:#15803D;"></circle>
+            <circle class="coverage-circle coverage-el region-norte obj-drive obj-locais obj-aberturas" data-radio="fundacao" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" cx="227.47" cy="163.8" r="48.18" style="fill:#16A34A;stroke:#16A34A;"></circle>
+            <circle class="coverage-circle coverage-el region-norte obj-drive obj-locais" data-radio="felgueiras" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais" cx="242.96" cy="175.47" r="31.17" style="fill:#22C55E;stroke:#22C55E;"></circle>
+            <circle class="coverage-circle coverage-el region-norte obj-drive obj-locais obj-aberturas" data-radio="noar" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" cx="175.86" cy="196.33" r="42.51" style="fill:#0F766E;stroke:#0F766E;"></circle>
+            <circle class="coverage-circle coverage-el region-norte obj-drive obj-locais obj-notoriedade" data-radio="nova" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais|Notoriedade" cx="174.42" cy="208.57" r="51.01" style="fill:#047857;stroke:#047857;"></circle>
+            <circle class="coverage-circle coverage-el region-norte obj-drive obj-locais" data-radio="jornal" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais" cx="221.23" cy="201.03" r="39.68" style="fill:#65A30D;stroke:#65A30D;"></circle>
+            <circle class="coverage-circle coverage-el region-norte obj-drive obj-locais" data-radio="voz-marao" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais" cx="313.62" cy="186.12" r="34.01" style="fill:#4D7C0F;stroke:#4D7C0F;"></circle>
+            <circle class="coverage-circle coverage-el region-norte obj-drive obj-locais" data-radio="chavesfm" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais" cx="357.04" cy="117.01" r="35.43" style="fill:#84CC16;stroke:#84CC16;"></circle>
+            <circle class="coverage-circle coverage-el region-norte obj-drive obj-locais" data-radio="brigantia" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais" cx="468.85" cy="106.63" r="45.34" style="fill:#107C41;stroke:#107C41;"></circle>
+            <circle class="coverage-circle coverage-el region-norte obj-drive obj-locais" data-radio="brigantia" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais" cx="544.99" cy="155.25" r="39.68" style="fill:#107C41;stroke:#107C41;"></circle>
+            <circle class="coverage-circle coverage-el region-norte obj-drive obj-locais" data-radio="brigantia" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais" cx="401.26" cy="156.74" r="39.68" style="fill:#107C41;stroke:#107C41;"></circle>
+            <circle class="coverage-circle coverage-el region-centro obj-drive obj-locais obj-aberturas" data-radio="terra-nova" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" cx="170.53" cy="289.95" r="59.51" style="fill:#15803D;stroke:#15803D;"></circle>
+            <circle class="coverage-circle coverage-el region-centro obj-drive obj-locais obj-aberturas" data-radio="terra-nova" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" cx="175.05" cy="255.64" r="31.17" style="fill:#15803D;stroke:#15803D;"></circle>
+            <circle class="coverage-circle coverage-el region-centro obj-drive obj-locais obj-aberturas" data-radio="terra-nova" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" cx="157.37" cy="323.29" r="36.84" style="fill:#15803D;stroke:#15803D;"></circle>
+            <circle class="coverage-circle coverage-el region-centro obj-drive obj-locais" data-radio="provincia" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais" cx="205.18" cy="321.71" r="63.77" style="fill:#16A34A;stroke:#16A34A;"></circle>
+            <circle class="coverage-circle coverage-el region-centro obj-drive obj-locais" data-radio="regional-centro" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais" cx="208.83" cy="358.72" r="51.01" style="fill:#22C55E;stroke:#22C55E;"></circle>
+            <circle class="coverage-circle coverage-el region-centro obj-drive obj-locais obj-aberturas" data-radio="rci" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" cx="287.57" cy="286.73" r="56.68" style="fill:#0F766E;stroke:#0F766E;"></circle>
+            <circle class="coverage-circle coverage-el region-centro obj-drive obj-locais obj-aberturas" data-radio="rci" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" cx="241.91" cy="301.2" r="59.51" style="fill:#0F766E;stroke:#0F766E;"></circle>
+            <circle class="coverage-circle coverage-el region-centro obj-drive obj-locais" data-radio="radio-f" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais" cx="388.58" cy="306.18" r="35.43" style="fill:#047857;stroke:#047857;"></circle>
+            <circle class="coverage-circle coverage-el region-centro obj-drive obj-locais" data-radio="covilha" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais" cx="351.23" cy="346.59" r="35.43" style="fill:#65A30D;stroke:#65A30D;"></circle>
+            <circle class="coverage-circle coverage-el region-centro obj-drive obj-locais" data-radio="covilha" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais" cx="361.72" cy="353.51" r="19.84" style="fill:#65A30D;stroke:#65A30D;"></circle>
+            <circle class="coverage-circle coverage-el region-centro obj-drive obj-locais" data-radio="urbana" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais" cx="353.44" cy="418.66" r="34.01" style="fill:#4D7C0F;stroke:#4D7C0F;"></circle>
+            <circle class="coverage-circle coverage-el region-centro obj-drive obj-locais obj-aberturas" data-radio="dom-fuas" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" cx="144.85" cy="453.31" r="49.6" style="fill:#84CC16;stroke:#84CC16;"></circle>
+            <circle class="coverage-circle coverage-el region-centro obj-drive obj-locais obj-aberturas" data-radio="dom-fuas" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" cx="165.62" cy="510.83" r="45.34" style="fill:#84CC16;stroke:#84CC16;"></circle>
+            <circle class="coverage-circle coverage-el region-centro obj-drive obj-locais obj-aberturas" data-radio="dom-fuas" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" cx="94.31" cy="484.58" r="48.18" style="fill:#84CC16;stroke:#84CC16;"></circle>
+            <circle class="coverage-circle coverage-el region-centro obj-drive obj-locais" data-radio="91fm" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais" cx="94.31" cy="484.58" r="53.85" style="fill:#107C41;stroke:#107C41;"></circle>
+            <circle class="coverage-circle coverage-el region-lvt obj-drive obj-locais obj-notoriedade" data-radio="record-santarem" data-region="Lisboa e Vale do Tejo" data-objectives="Drive-to-store|Campanhas locais|Notoriedade" cx="165.62" cy="510.83" r="56.68" style="fill:#15803D;stroke:#15803D;"></circle>
+            <circle class="coverage-circle coverage-el region-lvt obj-drive obj-locais obj-notoriedade" data-radio="record-santarem" data-region="Lisboa e Vale do Tejo" data-objectives="Drive-to-store|Campanhas locais|Notoriedade" cx="110.01" cy="564.03" r="28.34" style="fill:#15803D;stroke:#15803D;"></circle>
+            <circle class="coverage-circle coverage-el region-lvt obj-drive obj-locais obj-notoriedade" data-radio="record-lisboa" data-region="Lisboa e Vale do Tejo" data-objectives="Drive-to-store|Campanhas locais|Notoriedade" cx="56.04" cy="578.98" r="48.18" style="fill:#16A34A;stroke:#16A34A;"></circle>
+            <circle class="coverage-circle coverage-el region-lvt obj-drive obj-locais obj-notoriedade" data-radio="record-lisboa" data-region="Lisboa e Vale do Tejo" data-objectives="Drive-to-store|Campanhas locais|Notoriedade" cx="110.01" cy="564.03" r="28.34" style="fill:#16A34A;stroke:#16A34A;"></circle>
+            <circle class="coverage-circle coverage-el region-lvt obj-drive obj-locais" data-radio="popular" data-region="Lisboa e Vale do Tejo" data-objectives="Drive-to-store|Campanhas locais" cx="129.49" cy="606.02" r="49.6" style="fill:#22C55E;stroke:#22C55E;"></circle>
+            <circle class="coverage-circle coverage-el region-sul obj-drive obj-locais" data-radio="diana" data-region="Sul" data-objectives="Drive-to-store|Campanhas locais" cx="286.97" cy="615.4" r="42.51" style="fill:#0F766E;stroke:#0F766E;"></circle>
+            <circle class="coverage-circle coverage-el region-sul obj-drive obj-locais" data-radio="alvor" data-region="Sul" data-objectives="Drive-to-store|Campanhas locais" cx="188.78" cy="841.08" r="35.43" style="fill:#047857;stroke:#047857;"></circle>
+          </g>
+        </svg>
+        <div id="markerLayer">
+          
+          <button type="button" class="marker marker-el region-norte obj-drive obj-locais obj-aberturas" data-radio="alto-minho" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" aria-label="Rádio Alto Minho - Viana do Castelo" style="left:25.49821%;top:13.49457%;color:#107C41">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-norte obj-drive obj-locais obj-aberturas" data-radio="alto-minho" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" style="left:calc(25.49821% + -108px);top:calc(13.49457% + -18px);">
+            <div class="zone">Viana do Castelo</div>
+            <div class="radio">Rádio Alto Minho</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-norte obj-drive obj-locais obj-aberturas" data-radio="antena-minho" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" aria-label="Antena Minho - Braga / Barcelos" style="left:36.83571%;top:16.04565%;color:#15803D">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-norte obj-drive obj-locais obj-aberturas" data-radio="antena-minho" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" style="left:calc(36.83571% + -104px);top:calc(16.04565% + -16px);">
+            <div class="zone">Braga / Barcelos</div>
+            <div class="radio">Antena Minho</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-norte obj-drive obj-locais obj-aberturas" data-radio="fundacao" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" aria-label="Rádio Fundação - Guimarães" style="left:40.61964%;top:17.80435%;color:#16A34A">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-norte obj-drive obj-locais obj-aberturas" data-radio="fundacao" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" style="left:calc(40.61964% + 14px);top:calc(17.80435% + -12px);">
+            <div class="zone">Guimarães</div>
+            <div class="radio">Rádio Fundação</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-norte obj-drive obj-locais" data-radio="felgueiras" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais" aria-label="Rádio Felgueiras - Felgueiras" style="left:43.38571%;top:19.07283%;color:#22C55E">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-norte obj-drive obj-locais" data-radio="felgueiras" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais" style="left:calc(43.38571% + 14px);top:calc(19.07283% + 0px);">
+            <div class="zone">Felgueiras</div>
+            <div class="radio">Rádio Felgueiras</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-norte obj-drive obj-locais obj-aberturas" data-radio="noar" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" aria-label="Rádio NoAr - Porto / Maia" style="left:31.40357%;top:21.34022%;color:#0F766E">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-norte obj-drive obj-locais obj-aberturas" data-radio="noar" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" style="left:calc(31.40357% + -120px);top:calc(21.34022% + 8px);">
+            <div class="zone">Porto / Maia</div>
+            <div class="radio">Rádio NoAr</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-norte obj-drive obj-locais obj-notoriedade" data-radio="nova" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais|Notoriedade" aria-label="Rádio Nova - Gondomar / Maia / Penafiel" style="left:31.14643%;top:22.67065%;color:#047857">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-norte obj-drive obj-locais obj-notoriedade" data-radio="nova" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais|Notoriedade" style="left:calc(31.14643% + -118px);top:calc(22.67065% + 24px);">
+            <div class="zone">Gondomar / Maia / Penafiel</div>
+            <div class="radio">Rádio Nova</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-norte obj-drive obj-locais" data-radio="jornal" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais" aria-label="Rádio Jornal - Paredes / Penafiel" style="left:39.50536%;top:21.85109%;color:#65A30D">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-norte obj-drive obj-locais" data-radio="jornal" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais" style="left:calc(39.50536% + 14px);top:calc(21.85109% + -4px);">
+            <div class="zone">Paredes / Penafiel</div>
+            <div class="radio">Rádio Jornal</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-norte obj-drive obj-locais" data-radio="voz-marao" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais" aria-label="Rádio Voz do Marão - Vila Real" style="left:56.00357%;top:20.23043%;color:#4D7C0F">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-norte obj-drive obj-locais" data-radio="voz-marao" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais" style="left:calc(56.00357% + 14px);top:calc(20.23043% + -10px);">
+            <div class="zone">Vila Real</div>
+            <div class="radio">Rádio Voz do Marão</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-norte obj-drive obj-locais" data-radio="chavesfm" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais" aria-label="Chaves FM - Chaves" style="left:63.75714%;top:12.71848%;color:#84CC16">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-norte obj-drive obj-locais" data-radio="chavesfm" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais" style="left:calc(63.75714% + 14px);top:calc(12.71848% + -8px);">
+            <div class="zone">Chaves</div>
+            <div class="radio">Chaves FM</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-norte obj-drive obj-locais" data-radio="brigantia" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais" aria-label="Rádio Brigantia - Bragança" style="left:83.72321%;top:11.59022%;color:#107C41">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-norte obj-drive obj-locais" data-radio="brigantia" data-region="Norte" data-objectives="Drive-to-store|Campanhas locais" style="left:calc(83.72321% + 14px);top:calc(11.59022% + -10px);">
+            <div class="zone">Bragança</div>
+            <div class="radio">Rádio Brigantia</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-centro obj-drive obj-locais obj-aberturas" data-radio="terra-nova" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" aria-label="Rádio Terra Nova - Aveiro / Ovar" style="left:30.45179%;top:31.51630%;color:#15803D">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-centro obj-drive obj-locais obj-aberturas" data-radio="terra-nova" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" style="left:calc(30.45179% + -125px);top:calc(31.51630% + -8px);">
+            <div class="zone">Aveiro / Ovar</div>
+            <div class="radio">Rádio Terra Nova</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-centro obj-drive obj-locais" data-radio="provincia" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais" aria-label="Rádio Província - Mealhada" style="left:36.63929%;top:34.96848%;color:#16A34A">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-centro obj-drive obj-locais" data-radio="provincia" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais" style="left:calc(36.63929% + -112px);top:calc(34.96848% + 0px);">
+            <div class="zone">Mealhada</div>
+            <div class="radio">Rádio Província</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-centro obj-drive obj-locais" data-radio="regional-centro" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais" aria-label="Rádio Regional do Centro - Coimbra" style="left:37.29107%;top:38.99130%;color:#22C55E">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-centro obj-drive obj-locais" data-radio="regional-centro" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais" style="left:calc(37.29107% + 14px);top:calc(38.99130% + 0px);">
+            <div class="zone">Coimbra</div>
+            <div class="radio">Rádio Regional do Centro</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-centro obj-drive obj-locais obj-aberturas" data-radio="rci" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" aria-label="RCI - Viseu" style="left:51.35179%;top:31.16630%;color:#0F766E">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-centro obj-drive obj-locais obj-aberturas" data-radio="rci" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" style="left:calc(51.35179% + 14px);top:calc(31.16630% + -10px);">
+            <div class="zone">Viseu</div>
+            <div class="radio">RCI</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-centro obj-drive obj-locais" data-radio="radio-f" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais" aria-label="Rádio F - Guarda" style="left:69.38929%;top:33.28043%;color:#047857">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-centro obj-drive obj-locais" data-radio="radio-f" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais" style="left:calc(69.38929% + 14px);top:calc(33.28043% + -10px);">
+            <div class="zone">Guarda</div>
+            <div class="radio">Rádio F</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-centro obj-drive obj-locais" data-radio="covilha" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais" aria-label="Rádio Clube da Covilhã - Covilhã" style="left:62.71964%;top:37.67283%;color:#65A30D">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-centro obj-drive obj-locais" data-radio="covilha" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais" style="left:calc(62.71964% + 14px);top:calc(37.67283% + -6px);">
+            <div class="zone">Covilhã</div>
+            <div class="radio">Rádio Clube da Covilhã</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-centro obj-drive obj-locais" data-radio="urbana" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais" aria-label="Urbana FM - Castelo Branco" style="left:63.11429%;top:45.50652%;color:#4D7C0F">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-centro obj-drive obj-locais" data-radio="urbana" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais" style="left:calc(63.11429% + 14px);top:calc(45.50652% + -6px);">
+            <div class="zone">Castelo Branco</div>
+            <div class="radio">Urbana FM</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-centro obj-drive obj-locais obj-aberturas" data-radio="dom-fuas" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" aria-label="Rádio Dom Fuas - Batalha" style="left:25.86607%;top:49.27283%;color:#84CC16">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-centro obj-drive obj-locais obj-aberturas" data-radio="dom-fuas" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais|Aberturas / remodelações" style="left:calc(25.86607% + -110px);top:calc(49.27283% + -4px);">
+            <div class="zone">Batalha</div>
+            <div class="radio">Rádio Dom Fuas</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-centro obj-drive obj-locais" data-radio="91fm" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais" aria-label="91 FM Rádio - Caldas da Rainha" style="left:16.84107%;top:52.67174%;color:#107C41">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-centro obj-drive obj-locais" data-radio="91fm" data-region="Centro" data-objectives="Drive-to-store|Campanhas locais" style="left:calc(16.84107% + -128px);top:calc(52.67174% + -6px);">
+            <div class="zone">Caldas da Rainha</div>
+            <div class="radio">91 FM Rádio</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-lvt obj-drive obj-locais obj-notoriedade" data-radio="record-santarem" data-region="Lisboa e Vale do Tejo" data-objectives="Drive-to-store|Campanhas locais|Notoriedade" aria-label="Rádio Record FM – Santarém - Santarém / Alverca" style="left:29.57500%;top:55.52500%;color:#15803D">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-lvt obj-drive obj-locais obj-notoriedade" data-radio="record-santarem" data-region="Lisboa e Vale do Tejo" data-objectives="Drive-to-store|Campanhas locais|Notoriedade" style="left:calc(29.57500% + 14px);top:calc(55.52500% + -4px);">
+            <div class="zone">Santarém / Alverca</div>
+            <div class="radio">Rádio Record FM – Santarém</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-lvt obj-drive obj-locais obj-notoriedade" data-radio="record-lisboa" data-region="Lisboa e Vale do Tejo" data-objectives="Drive-to-store|Campanhas locais|Notoriedade" aria-label="Rádio Record FM – Lisboa - Sintra / Alverca" style="left:10.00714%;top:62.93261%;color:#16A34A">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-lvt obj-drive obj-locais obj-notoriedade" data-radio="record-lisboa" data-region="Lisboa e Vale do Tejo" data-objectives="Drive-to-store|Campanhas locais|Notoriedade" style="left:calc(10.00714% + -130px);top:calc(62.93261% + -4px);">
+            <div class="zone">Sintra / Alverca</div>
+            <div class="radio">Rádio Record FM – Lisboa</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-lvt obj-drive obj-locais" data-radio="popular" data-region="Lisboa e Vale do Tejo" data-objectives="Drive-to-store|Campanhas locais" aria-label="Popular FM - Corroios / Montijo" style="left:23.12321%;top:65.87174%;color:#22C55E">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-lvt obj-drive obj-locais" data-radio="popular" data-region="Lisboa e Vale do Tejo" data-objectives="Drive-to-store|Campanhas locais" style="left:calc(23.12321% + 14px);top:calc(65.87174% + 6px);">
+            <div class="zone">Corroios / Montijo</div>
+            <div class="radio">Popular FM</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-sul obj-drive obj-locais" data-radio="diana" data-region="Sul" data-objectives="Drive-to-store|Campanhas locais" aria-label="Rádio Diana - Évora" style="left:51.24464%;top:66.89130%;color:#0F766E">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-sul obj-drive obj-locais" data-radio="diana" data-region="Sul" data-objectives="Drive-to-store|Campanhas locais" style="left:calc(51.24464% + 14px);top:calc(66.89130% + -4px);">
+            <div class="zone">Évora</div>
+            <div class="radio">Rádio Diana</div>
+          </div>
+
+          <button type="button" class="marker marker-el region-sul obj-drive obj-locais" data-radio="alvor" data-region="Sul" data-objectives="Drive-to-store|Campanhas locais" aria-label="Alvor FM - Portimão" style="left:33.71071%;top:91.42174%;color:#047857">
+            <span class="marker-pin"></span>
+          </button>
+          <div class="label label-el region-sul obj-drive obj-locais" data-radio="alvor" data-region="Sul" data-objectives="Drive-to-store|Campanhas locais" style="left:calc(33.71071% + 14px);top:calc(91.42174% + -4px);">
+            <div class="zone">Portimão</div>
+            <div class="radio">Alvor FM</div>
+          </div>
+        </div>
+        <div class="national-note" id="nationalNote">
+          <strong>Cobertura nacional</strong>
+          <p>As rádios nacionais reforçam notoriedade, alcance e pressão comercial em Portugal Continental.</p>
+        </div>
+      </div>
+      <div class="footer-note">Mapa indicativo. As áreas representadas não substituem estudos técnicos de propagação FM nem dados certificados de audiência.</div>
+    </section>
+  </div>
+  <div class="side-col">
+    <aside class="card sidebar">
+      <div class="detail" id="detail">
+        <h3>Cobertura total</h3>
+        <p>A JOM combina cobertura nacional para notoriedade e alcance com rádios regionais para proximidade, campanhas locais e drive-to-store.</p>
+      </div>
+      <div class="section-title">Rádios visíveis</div>
+      <div class="list" id="visibleList"></div>
+      <div class="note"><strong>Nota metodológica.</strong> As áreas de cobertura são estimativas para apoio ao planeamento de meios, construídas com base em informação pública disponível, frequências, concelhos servidos, centros emissores e aproximações conservadoras quando a informação é limitada.</div>
+    </aside>
+  </div>
+</main>
+</section>
+
+  <section id="tvView" class="portal-view">
+    <div class="section-hero"><div class="inner"><h1>Televisão</h1><p>Presença televisiva nacional da JOM nos principais canais selecionados.</p></div></div>
+    <div class="tv-country"><div class="tv-banner">Cobertura: Portugal · comunicação de âmbito nacional</div></div>
+    <div class="media-grid">
+      <article class="media-card"><div class="brand-icon">📺</div><h2>SIC</h2><div class="handle">Canal generalista nacional</div><div class="desc">Presença em campanhas de alcance e notoriedade da marca.</div><a href="https://sic.pt/" target="_blank" rel="noopener">Visitar SIC</a></article>
+      <article class="media-card"><div class="brand-icon">📺</div><h2>TVI</h2><div class="handle">Canal generalista nacional</div><div class="desc">Presença em campanhas de alcance e comunicação comercial.</div><a href="https://tvi.iol.pt/" target="_blank" rel="noopener">Visitar TVI</a></article>
+      <article class="media-card"><div class="brand-icon">📺</div><h2>CMTV</h2><div class="handle">Canal nacional de informação</div><div class="desc">Complemento de cobertura e frequência televisiva.</div><a href="https://www.cmjornal.pt/cmtv" target="_blank" rel="noopener">Visitar CMTV</a></article>
+    </div>
+  </section>
+
+  <section id="digitalView" class="portal-view">
+    <div class="section-hero"><div class="inner"><h1>Plataformas Digitais Oficiais</h1><p>Os canais digitais onde colaboradores e clientes podem acompanhar a JOM.</p></div></div>
+    <div class="media-grid">
+      <article class="media-card"><div class="brand-icon">🏠</div><h2>Website JOM</h2><div class="handle">jom.pt</div><div class="desc">Loja online e principal presença digital da marca.</div><a href="https://www.jom.pt/" target="_blank" rel="noopener">Abrir Website</a></article>
+      <article class="media-card"><div class="brand-icon">▶️</div><h2>YouTube</h2><div class="handle">@jom_lojas</div><div class="desc">Vídeos de campanhas, produtos e conteúdos institucionais.</div><a href="https://www.youtube.com/@jom_lojas" target="_blank" rel="noopener">Abrir Canal</a></article>
+      <article class="media-card"><div class="brand-icon">📘</div><h2>Facebook</h2><div class="handle">jom.lojas</div><div class="desc">Campanhas, novidades, inspiração e contacto com a comunidade.</div><a href="https://www.facebook.com/jom.lojas" target="_blank" rel="noopener">Abrir Página</a></article>
+      <article class="media-card"><div class="brand-icon">📸</div><h2>Instagram</h2><div class="handle">@jom_lojas</div><div class="desc">Inspiração para a casa, campanhas e comunicação visual da marca.</div><a href="https://www.instagram.com/jom_lojas/" target="_blank" rel="noopener">Abrir Perfil</a></article>
+      <article class="media-card"><div class="brand-icon">💼</div><h2>LinkedIn</h2><div class="handle">JOM</div><div class="desc">Comunicação institucional, empresarial e de marca empregadora.</div><a href="https://www.linkedin.com/company/18701004/" target="_blank" rel="noopener">Abrir Página</a></article>
+      <article class="media-card"><div class="brand-icon">🎵</div><h2>TikTok</h2><div class="handle">@jom_lojas</div><div class="desc">Conteúdos curtos, tendências e comunicação dinâmica.</div><a href="https://www.tiktok.com/@jom_lojas" target="_blank" rel="noopener">Abrir Perfil</a></article>
+      <article class="media-card"><div class="brand-icon">📌</div><h2>Pinterest</h2><div class="handle">jom_lojas</div><div class="desc">Inspiração, ambientes, decoração e ideias para a casa.</div><a href="https://pt.pinterest.com/jom_lojas/" target="_blank" rel="noopener">Abrir Perfil</a></article>
+    </div>
+  </section>
+
+  <section id="outdoorView" class="portal-view">
+    <div class="section-hero"><div class="inner"><h1>Rede de Outdoors</h1><p>Estrutura preparada para uma próxima atualização da aplicação.</p></div></div>
+    <div class="media-grid">
+      <article class="media-card"><div class="brand-icon">🟢</div><h2>Em desenvolvimento</h2><div class="handle">Próxima versão</div><div class="desc">A futura camada poderá incluir código da posição, localização, fotografia, formato, sentido de circulação, estado e lojas apoiadas.</div></article>
+    </div>
+  </section>
+  <div class="portal-footer">JOM Marketing Hub · Versão 1.0</div>
+</div>
+<script>
+var mapWidth=560,mapHeight=920;
+var radios=[{"id":"alto-minho","name":"Rádio Alto Minho","zone":"Viana do Castelo","city":"Viana do Castelo","region":"Norte","lat":41.6946,"lon":-8.8302,"frequency":"97.0 / 101.7 FM","priority":"Média","objectives":["Drive-to-store","Campanhas locais","Aberturas / remodelações"],"site":"https://radioaltominho.pt/","live":"https://radioaltominho.pt/site/","pointType":"Cidade/sede de referência","jomZone":"Viana do Castelo","coverageText":"Alto Minho, com leitura alargada por frequência regional; representado com raio regional conservador.","coverageBasis":"Fonte pública identifica frequências 97.0/101.7 e cobertura no Alto Minho; círculo ajustado como cobertura regional indicativa.","sourceLabel":"Rádio Alto Minho / RadioOnline","sourceUrl":"https://radioaltominho.pt/site/","coverageCenters":[{"label":"Viana do Castelo","lat":41.6946,"lon":-8.8302,"radiusKm":35,"x":142.79,"y":124.15,"r":49.6}],"color":"#107C41","x":142.79,"y":124.15,"labelDx":-108,"labelDy":-18,"labelSide":"left"},{"id":"antena-minho","name":"Antena Minho","zone":"Braga / Barcelos","city":"Braga","region":"Norte","lat":41.5454,"lon":-8.4265,"frequency":"106.0 FM","priority":"Alta","objectives":["Drive-to-store","Campanhas locais","Aberturas / remodelações"],"site":"https://www.antenaminho.pt/","live":"https://www.antenaminho.pt/","pointType":"Cidade/sede de referência","jomZone":"Braga / Barcelos","coverageText":"Cobertura regional em Braga, Viana do Castelo e áreas vizinhas; representada com raio regional.","coverageBasis":"Fontes públicas indicam emissão em 106.0 FM e cobertura regional em Braga/Viana do Castelo e áreas vizinhas.","sourceLabel":"Antena Minho / APR / MyRadioOnline","sourceUrl":"https://myradioonline.pt/antena-minho","coverageCenters":[{"label":"Braga","lat":41.5454,"lon":-8.4265,"radiusKm":38,"x":206.28,"y":147.62,"r":53.85},{"label":"Barcelos","lat":41.5388,"lon":-8.6151,"radiusKm":22,"x":176.62,"y":148.66,"r":31.17}],"color":"#15803D","x":206.28,"y":147.62,"labelDx":-104,"labelDy":-16,"labelSide":"left"},{"id":"fundacao","name":"Rádio Fundação","zone":"Guimarães","city":"Guimarães","region":"Norte","lat":41.4425,"lon":-8.2918,"frequency":"95.8 FM","priority":"Alta","objectives":["Drive-to-store","Campanhas locais","Aberturas / remodelações"],"site":"https://www.radiofundacao.net/","live":"https://www.radiofundacao.net/","pointType":"Cidade/sede de referência","jomZone":"Guimarães","coverageText":"Transmite de Guimarães em 95.8 FM, com referência pública a cobertura no litoral norte.","coverageBasis":"Cobertura tratada como regional de média dimensão por indicação de zona litoral norte.","sourceLabel":"Rádio Fundação / RadioOnline","sourceUrl":"https://radioonline.com.pt/fundacao/","coverageCenters":[{"label":"Guimarães","lat":41.4425,"lon":-8.2918,"radiusKm":34,"x":227.47,"y":163.8,"r":48.18}],"color":"#16A34A","x":227.47,"y":163.8,"labelDx":14,"labelDy":-12,"labelSide":"right"},{"id":"felgueiras","name":"Rádio Felgueiras","zone":"Felgueiras","city":"Felgueiras","region":"Norte","lat":41.3683,"lon":-8.1933,"frequency":"92.2 FM","priority":"Média","objectives":["Drive-to-store","Campanhas locais"],"site":"https://www.radiofelgueiras.pt/","live":"https://www.radiofelgueiras.pt/","pointType":"Cidade/sede de referência","jomZone":"Felgueiras","coverageText":"Cobertura local no concelho de Felgueiras e Vale do Sousa próximo.","coverageBasis":"Fonte APR identifica a rádio como local no concelho de Felgueiras e frequência 92.2 FM.","sourceLabel":"Rádio Felgueiras / APR","sourceUrl":"https://apradiodifusao.pt/directories/radio-felgueiras/","coverageCenters":[{"label":"Felgueiras","lat":41.3683,"lon":-8.1933,"radiusKm":22,"x":242.96,"y":175.47,"r":31.17}],"color":"#22C55E","x":242.96,"y":175.47,"labelDx":14,"labelDy":0,"labelSide":"right"},{"id":"noar","name":"Rádio NoAr","zone":"Porto / Maia","city":"Maia","region":"Norte","lat":41.2357,"lon":-8.6199,"frequency":"107.8 FM / 97.1 FM","priority":"Alta","objectives":["Drive-to-store","Campanhas locais","Aberturas / remodelações"],"site":"https://www.radionoar.pt/","live":"https://www.radionoar.pt/","pointType":"Cidade/sede de referência","jomZone":"Porto / Maia","coverageText":"Cobertura regional no Grande Porto a partir da Maia.","coverageBasis":"Fonte pública identifica cobertura regional no Grande Porto e emissão em 107.8 FM.","sourceLabel":"Rádio NoAr / MyRadioOnline","sourceUrl":"https://myradioonline.pt/radio-no-ar","coverageCenters":[{"label":"Maia / Grande Porto","lat":41.2357,"lon":-8.6199,"radiusKm":30,"x":175.86,"y":196.33,"r":42.51}],"color":"#0F766E","x":175.86,"y":196.33,"labelDx":-120,"labelDy":8,"labelSide":"left"},{"id":"nova","name":"Rádio Nova","zone":"Gondomar / Maia / Penafiel","city":"Porto","region":"Norte","lat":41.1579,"lon":-8.6291,"frequency":"98.9 FM","priority":"Alta","objectives":["Drive-to-store","Campanhas locais","Notoriedade"],"site":"https://www.radionova.fm/","live":"https://www.radionova.fm/","pointType":"Cidade/sede de referência","jomZone":"Gondomar / Maia / Penafiel","coverageText":"Antena urbana com cobertura referida para toda a zona metropolitana do Porto.","coverageBasis":"Fonte pública refere emissores de 5 kW em 98.9 FM e cobertura da zona metropolitana do Porto.","sourceLabel":"Rádio Nova / RadioMixer / APR","sourceUrl":"https://radiomixer.net/pt/prt/nova","coverageCenters":[{"label":"Grande Porto","lat":41.1579,"lon":-8.6291,"radiusKm":36,"x":174.42,"y":208.57,"r":51.01}],"color":"#047857","x":174.42,"y":208.57,"labelDx":-118,"labelDy":24,"labelSide":"left"},{"id":"jornal","name":"Rádio Jornal","zone":"Paredes / Penafiel","city":"Paredes","region":"Norte","lat":41.2058,"lon":-8.3315,"frequency":"103.6 FM","priority":"Alta","objectives":["Drive-to-store","Campanhas locais"],"site":"https://radiojornalfm.pt/","live":"https://www.radios-online.pt/jornal-fm-1036","pointType":"Cidade/sede de referência","jomZone":"Paredes / Penafiel","coverageText":"De Paredes para o Vale do Sousa e Grande Porto; representada com raio regional local-alargado.","coverageBasis":"Fontes públicas indicam Paredes, 103.6 FM e posicionamento Vale do Sousa / Grande Porto.","sourceLabel":"Rádio Jornal FM / APR / Radios Online","sourceUrl":"https://apradiodifusao.pt/directories/radio-jornal-fm/","coverageCenters":[{"label":"Paredes / Penafiel","lat":41.2058,"lon":-8.3315,"radiusKm":28,"x":221.23,"y":201.03,"r":39.68}],"color":"#65A30D","x":221.23,"y":201.03,"labelDx":14,"labelDy":-4,"labelSide":"right"},{"id":"voz-marao","name":"Rádio Voz do Marão","zone":"Vila Real","city":"Vila Real","region":"Norte","lat":41.3006,"lon":-7.7441,"frequency":"96.3 FM","priority":"Média","objectives":["Drive-to-store","Campanhas locais"],"site":"http://www.radiovozdomarao.com/","live":"https://www.radios-online.pt/radio-voz-do-marao","pointType":"Cidade/sede de referência","jomZone":"Vila Real","coverageText":"Cobertura local/regional centrada em Vila Real.","coverageBasis":"Fontes públicas indicam emissão em 96.3 FM em Vila Real.","sourceLabel":"Rádio Voz do Marão / Radios Online","sourceUrl":"https://www.radios-online.pt/radio-voz-do-marao","coverageCenters":[{"label":"Vila Real","lat":41.3006,"lon":-7.7441,"radiusKm":24,"x":313.62,"y":186.12,"r":34.01}],"color":"#4D7C0F","x":313.62,"y":186.12,"labelDx":14,"labelDy":-10,"labelSide":"right"},{"id":"chavesfm","name":"Chaves FM","zone":"Chaves","city":"Chaves","region":"Norte","lat":41.74,"lon":-7.468,"frequency":"98.6 FM","priority":"Média","objectives":["Drive-to-store","Campanhas locais"],"site":"https://www.chavesfm.com/","live":"https://www.chavesfm.com/","pointType":"Cidade/sede de referência","jomZone":"Chaves","coverageText":"Cobertura local no Alto Tâmega, centrada em Chaves.","coverageBasis":"Cobertura modelada como local/regional por sede em Chaves e presença FM local.","sourceLabel":"Chaves FM / site oficial","sourceUrl":"https://www.chavesfm.com/","coverageCenters":[{"label":"Chaves","lat":41.74,"lon":-7.468,"radiusKm":25,"x":357.04,"y":117.01,"r":35.43}],"color":"#84CC16","x":357.04,"y":117.01,"labelDx":14,"labelDy":-8,"labelSide":"right"},{"id":"brigantia","name":"Rádio Brigantia","zone":"Bragança","city":"Bragança","region":"Norte","lat":41.806,"lon":-6.7572,"frequency":"97.3 / 97.7 FM","priority":"Alta","objectives":["Drive-to-store","Campanhas locais"],"site":"https://brigantia.pt/","live":"https://brigantia.pt/player","pointType":"Cidade/sede de referência","jomZone":"Bragança","coverageText":"Cobertura alargada no Nordeste Transmontano, com frequências em Bragança, Miranda do Douro e Mirandela.","coverageBasis":"A página de player da Rádio Brigantia lista 97.3 FM em Bragança e 97.7 FM em Miranda do Douro e Mirandela.","sourceLabel":"Rádio Brigantia / Player oficial","sourceUrl":"https://brigantia.pt/player","coverageCenters":[{"label":"Bragança","lat":41.806,"lon":-6.7572,"radiusKm":32,"x":468.85,"y":106.63,"r":45.34},{"label":"Miranda do Douro","lat":41.4969,"lon":-6.2731,"radiusKm":28,"x":544.99,"y":155.25,"r":39.68},{"label":"Mirandela","lat":41.4874,"lon":-7.1869,"radiusKm":28,"x":401.26,"y":156.74,"r":39.68}],"color":"#107C41","x":468.85,"y":106.63,"labelDx":14,"labelDy":-10,"labelSide":"right"},{"id":"terra-nova","name":"Rádio Terra Nova","zone":"Aveiro / Ovar","city":"Ílhavo / Aveiro","region":"Centro","lat":40.6405,"lon":-8.6538,"frequency":"105.0 FM","priority":"Alta","objectives":["Drive-to-store","Campanhas locais","Aberturas / remodelações"],"site":"https://terranova.pt/","live":"https://terranova.pt/","pointType":"Cidade/zona de referência JOM","jomZone":"Aveiro / Ovar","coverageText":"Cobertura declarada para Ílhavo, Aveiro, Vagos, Estarreja, Murtosa, Ovar, Oliveira do Bairro, Anadia, Cantanhede e Mira.","coverageBasis":"A página “Projeto” da Terra Nova declara explicitamente os concelhos de cobertura.","sourceLabel":"Terra Nova / Projeto","sourceUrl":"https://terranova.pt/projeto","coverageCenters":[{"label":"Aveiro / Ílhavo","lat":40.6405,"lon":-8.6538,"radiusKm":42,"x":170.53,"y":289.95,"r":59.51},{"label":"Ovar","lat":40.8586,"lon":-8.6251,"radiusKm":22,"x":175.05,"y":255.64,"r":31.17},{"label":"Mira / Cantanhede","lat":40.4285,"lon":-8.7375,"radiusKm":26,"x":157.37,"y":323.29,"r":36.84}],"color":"#15803D","x":170.53,"y":289.95,"labelDx":-125,"labelDy":-8,"labelSide":"left"},{"id":"provincia","name":"Rádio Província","zone":"Mealhada","city":"Anadia","region":"Centro","lat":40.4386,"lon":-8.4335,"frequency":"100.8 FM","priority":"Média","objectives":["Drive-to-store","Campanhas locais"],"site":"https://radioprovincia.pt/","live":"https://radioprovincia.pt/emissao-online/","pointType":"Sede/emissor de referência","jomZone":"Mealhada","coverageText":"Cobertura extensa a partir de emissor a 600m de altitude, com alcance declarado de grande dimensão.","coverageBasis":"O site da Rádio Província refere “cobertura imensa”, 100.8 FM e emissor a 600 metros de altitude.","sourceLabel":"Rádio Província / site oficial","sourceUrl":"https://radioprovincia.pt/","coverageCenters":[{"label":"Anadia / Mealhada","lat":40.4386,"lon":-8.4335,"radiusKm":45,"x":205.18,"y":321.71,"r":63.77}],"color":"#16A34A","x":205.18,"y":321.71,"labelDx":-112,"labelDy":0,"labelSide":"left"},{"id":"regional-centro","name":"Rádio Regional do Centro","zone":"Coimbra","city":"Coimbra","region":"Centro","lat":40.2033,"lon":-8.4103,"frequency":"96.2 FM","priority":"Média","objectives":["Drive-to-store","Campanhas locais"],"site":"https://www.radioregionalcentro.pt/","live":"https://www.radioregionalcentro.pt/","pointType":"Cidade/sede de referência","jomZone":"Coimbra","coverageText":"Cobertura regional no distrito de Coimbra a partir de emissores bem localizados em 96.2 FM.","coverageBasis":"A página “Sobre Nós” da rádio indica foco no distrito de Coimbra e cobertura em boas condições nessa área.","sourceLabel":"Rádio Regional do Centro / Sobre Nós","sourceUrl":"https://www.radioregionalcentro.pt/sobre-nos/","coverageCenters":[{"label":"Coimbra / Condeixa","lat":40.2033,"lon":-8.4103,"radiusKm":36,"x":208.83,"y":358.72,"r":51.01}],"color":"#22C55E","x":208.83,"y":358.72,"labelDx":14,"labelDy":0,"labelSide":"right"},{"id":"rci","name":"RCI","zone":"Viseu","city":"Viseu","region":"Centro","lat":40.661,"lon":-7.9097,"frequency":"105.5 / 104.8 MHz","priority":"Alta","objectives":["Drive-to-store","Campanhas locais","Aberturas / remodelações"],"site":"https://www.rci.pt/","live":"https://www.rci.pt/","pointType":"Cidade/sede de referência","jomZone":"Viseu","coverageText":"Cobertura consistente na região centro, com incidência em Viseu, Tondela, Santa Comba Dão, Mangualde, Nelas, Sátão, Oliveira de Frades e São Pedro do Sul.","coverageBasis":"O site da RCI declara dois centros emissores, Serra do Caramulo e Viseu, e lista concelhos de incidência.","sourceLabel":"RCI / Sobre Nós","sourceUrl":"https://www.rci.pt/Sobre-Nos/","coverageCenters":[{"label":"Viseu","lat":40.661,"lon":-7.9097,"radiusKm":40,"x":287.57,"y":286.73,"r":56.68},{"label":"Serra do Caramulo / Tondela","lat":40.569,"lon":-8.2,"radiusKm":42,"x":241.91,"y":301.2,"r":59.51}],"color":"#0F766E","x":287.57,"y":286.73,"labelDx":14,"labelDy":-10,"labelSide":"right"},{"id":"radio-f","name":"Rádio F","zone":"Guarda","city":"Guarda","region":"Centro","lat":40.5373,"lon":-7.2675,"frequency":"105.8 FM","priority":"Média","objectives":["Drive-to-store","Campanhas locais"],"site":"http://www.radiof.com/","live":"https://www.radios-online.pt/radio-f","pointType":"Cidade/sede de referência","jomZone":"Guarda","coverageText":"Cobertura local/regional centrada na Guarda.","coverageBasis":"APR identifica Rádio F no concelho da Guarda e frequência 105.8 FM.","sourceLabel":"Rádio F / APR","sourceUrl":"https://apradiodifusao.pt/directories/radio-elmo/","coverageCenters":[{"label":"Guarda","lat":40.5373,"lon":-7.2675,"radiusKm":25,"x":388.58,"y":306.18,"r":35.43}],"color":"#047857","x":388.58,"y":306.18,"labelDx":14,"labelDy":-10,"labelSide":"right"},{"id":"covilha","name":"Rádio Clube da Covilhã","zone":"Covilhã","city":"Covilhã","region":"Centro","lat":40.2804,"lon":-7.505,"frequency":"95.6 / 97.0 FM","priority":"Média","objectives":["Drive-to-store","Campanhas locais"],"site":"https://radio-covilha.pt/","live":"https://radio-covilha.pt/","pointType":"Cidade/sede de referência","jomZone":"Covilhã","coverageText":"Cobertura no concelho da Covilhã, reforçada por microcobertura no Ferro para colmatar falhas de relevo/orografia.","coverageBasis":"Fontes da RCC referem 95.6 FM e reativação da microcobertura em 97.0 FM no Ferro.","sourceLabel":"Rádio Clube da Covilhã / notícia RCC","sourceUrl":"https://radio-covilha.pt/2025/04/noticias/rcc-reativa-frequencia-97-0fm-e-reforca-presenca-no-concelho-da-covilha/","coverageCenters":[{"label":"Covilhã","lat":40.2804,"lon":-7.505,"radiusKm":25,"x":351.23,"y":346.59,"r":35.43},{"label":"Ferro","lat":40.2364,"lon":-7.4383,"radiusKm":14,"x":361.72,"y":353.51,"r":19.84}],"color":"#65A30D","x":351.23,"y":346.59,"labelDx":14,"labelDy":-6,"labelSide":"right"},{"id":"urbana","name":"Urbana FM","zone":"Castelo Branco","city":"Castelo Branco","region":"Centro","lat":39.8222,"lon":-7.4909,"frequency":"100.8 FM","priority":"Média","objectives":["Drive-to-store","Campanhas locais"],"site":"https://radio-urbana.pt/","live":"https://radioonline.com.pt/urbana-fm/","pointType":"Cidade/sede de referência","jomZone":"Castelo Branco","coverageText":"Emissora local albicastrense, centrada em Castelo Branco.","coverageBasis":"Fonte pública descreve a Rádio Urbana como emissora local para servir a população albicastrense.","sourceLabel":"Urbana FM / RadioOnline","sourceUrl":"https://radioonline.com.pt/urbana-fm/","coverageCenters":[{"label":"Castelo Branco","lat":39.8222,"lon":-7.4909,"radiusKm":24,"x":353.44,"y":418.66,"r":34.01}],"color":"#4D7C0F","x":353.44,"y":418.66,"labelDx":14,"labelDy":-6,"labelSide":"right"},{"id":"dom-fuas","name":"Rádio Dom Fuas","zone":"Batalha","city":"Porto de Mós","region":"Centro","lat":39.6019,"lon":-8.8171,"frequency":"100.1 / 98.5 / 91.9 FM","priority":"Alta","objectives":["Drive-to-store","Campanhas locais","Aberturas / remodelações"],"site":"https://radiodomfuas.pt/","live":"https://radiodomfuas.pt/","pointType":"Sede/emissor principal de referência","jomZone":"Batalha","coverageText":"Cobre centro litoral: 100.1 FM para região de Leiria, 98.5 FM para Santarém e 91.9 FM para Oeste/Costa de Prata.","coverageBasis":"A página de publicidade da Rádio Dom Fuas declara as três frequências e regiões cobertas.","sourceLabel":"Rádio Dom Fuas / Publicidade","sourceUrl":"https://radiodomfuas.pt/publicidade/","coverageCenters":[{"label":"Porto de Mós / Leiria","lat":39.6019,"lon":-8.8171,"radiusKm":35,"x":144.85,"y":453.31,"r":49.6},{"label":"Santarém","lat":39.2362,"lon":-8.685,"radiusKm":32,"x":165.62,"y":510.83,"r":45.34},{"label":"Oeste / Costa de Prata","lat":39.4031,"lon":-9.1384,"radiusKm":34,"x":94.31,"y":484.58,"r":48.18}],"color":"#84CC16","x":144.85,"y":453.31,"labelDx":-110,"labelDy":-4,"labelSide":"left"},{"id":"91fm","name":"91 FM Rádio","zone":"Caldas da Rainha","city":"Caldas da Rainha","region":"Centro","lat":39.4031,"lon":-9.1384,"frequency":"91.0 FM","priority":"Média","objectives":["Drive-to-store","Campanhas locais"],"site":"https://91fm.pt/","live":"https://91fm.pt/","pointType":"Cidade/sede de referência","jomZone":"Caldas da Rainha","coverageText":"Cobertura no Oeste: Óbidos, Caldas da Rainha, Bombarral, Cadaval, Peniche, Alcobaça, Nazaré e Rio Maior.","coverageBasis":"Fonte pública lista vários concelhos do Oeste como âmbito de escuta da 91FM.","sourceLabel":"91FM / RadioOnline","sourceUrl":"https://radioonline.com.pt/91fm/","coverageCenters":[{"label":"Caldas da Rainha / Óbidos","lat":39.4031,"lon":-9.1384,"radiusKm":38,"x":94.31,"y":484.58,"r":53.85}],"color":"#107C41","x":94.31,"y":484.58,"labelDx":-128,"labelDy":-6,"labelSide":"left"},{"id":"record-santarem","name":"Rádio Record FM – Santarém","zone":"Santarém / Alverca","city":"Santarém","region":"Lisboa e Vale do Tejo","lat":39.2362,"lon":-8.685,"frequency":"101.7 / 105.5 FM","priority":"Alta","objectives":["Drive-to-store","Campanhas locais","Notoriedade"],"site":"https://www.recordfm.pt/","live":"https://www.recordfm.pt/como-ouvir/","pointType":"Cidade/frequência de referência JOM","jomZone":"Santarém / Alverca","coverageText":"Cobertura Record FM no eixo Santarém, com frequências 101.7 e 105.5; rede Record inclui ainda Lisboa, Porto, Leiria e Algarve.","coverageBasis":"A página “Como ouvir” lista frequências por zona, incluindo Santarém 101.7/105.5 e Grande Lisboa 107.7.","sourceLabel":"Record FM / Como ouvir","sourceUrl":"https://www.recordfm.pt/como-ouvir/","coverageCenters":[{"label":"Santarém","lat":39.2362,"lon":-8.685,"radiusKm":40,"x":165.62,"y":510.83,"r":56.68},{"label":"Alverca","lat":38.898,"lon":-9.0386,"radiusKm":20,"x":110.01,"y":564.03,"r":28.34}],"color":"#15803D","x":165.62,"y":510.83,"labelDx":14,"labelDy":-4,"labelSide":"right"},{"id":"record-lisboa","name":"Rádio Record FM – Lisboa","zone":"Sintra / Alverca","city":"Sintra","region":"Lisboa e Vale do Tejo","lat":38.8029,"lon":-9.3817,"frequency":"107.7 FM","priority":"Alta","objectives":["Drive-to-store","Campanhas locais","Notoriedade"],"site":"https://www.recordfm.pt/","live":"https://www.recordfm.pt/como-ouvir/","pointType":"Cidade/frequência de referência JOM","jomZone":"Sintra / Alverca","coverageText":"Cobertura Grande Lisboa em 107.7 FM, com referência JOM em Sintra / Alverca.","coverageBasis":"A página “Como ouvir” lista Grande Lisboa 107.7 MHz.","sourceLabel":"Record FM / Como ouvir","sourceUrl":"https://www.recordfm.pt/como-ouvir/","coverageCenters":[{"label":"Grande Lisboa / Sintra","lat":38.8029,"lon":-9.3817,"radiusKm":34,"x":56.04,"y":578.98,"r":48.18},{"label":"Alverca","lat":38.898,"lon":-9.0386,"radiusKm":20,"x":110.01,"y":564.03,"r":28.34}],"color":"#16A34A","x":56.04,"y":578.98,"labelDx":-130,"labelDy":-4,"labelSide":"left"},{"id":"popular","name":"Popular FM","zone":"Corroios / Montijo","city":"Pinhal Novo","region":"Lisboa e Vale do Tejo","lat":38.631,"lon":-8.9147,"frequency":"90.9 FM","priority":"Média","objectives":["Drive-to-store","Campanhas locais"],"site":"https://radoxo.com/portugal/popular-fm","live":"https://radoxo.com/portugal/popular-fm","pointType":"Emissor/cidade de referência aproximada","jomZone":"Corroios / Montijo","coverageText":"Rádio local de Pinhal Novo em 90.9 FM para a região da Grande Lisboa e Vale do Tejo.","coverageBasis":"Fonte pública identifica Popular FM 90.9 FM em Pinhal Novo e cobertura Grande Lisboa / Vale do Tejo.","sourceLabel":"Popular FM / Radoxo","sourceUrl":"https://radoxo.com/portugal/popular-fm","coverageCenters":[{"label":"Pinhal Novo / Margem Sul","lat":38.631,"lon":-8.9147,"radiusKm":35,"x":129.49,"y":606.02,"r":49.6}],"color":"#22C55E","x":129.49,"y":606.02,"labelDx":14,"labelDy":6,"labelSide":"right"},{"id":"diana","name":"Rádio Diana","zone":"Évora","city":"Évora","region":"Sul","lat":38.5714,"lon":-7.9135,"frequency":"94.1 FM","priority":"Média","objectives":["Drive-to-store","Campanhas locais"],"site":"https://www.dianafm.com/","live":"https://www.dianafm.com/","pointType":"Cidade/sede de referência","jomZone":"Évora","coverageText":"Cobertura local/regional centrada em Évora em 94.1 FM.","coverageBasis":"APR identifica a Rádio Diana FM no concelho de Évora e frequência 94.1 FM.","sourceLabel":"Diana FM / APR","sourceUrl":"https://apradiodifusao.pt/directories/radio-diana-fm/","coverageCenters":[{"label":"Évora","lat":38.5714,"lon":-7.9135,"radiusKm":30,"x":286.97,"y":615.4,"r":42.51}],"color":"#0F766E","x":286.97,"y":615.4,"labelDx":14,"labelDy":-4,"labelSide":"right"},{"id":"alvor","name":"Alvor FM","zone":"Portimão","city":"Portimão","region":"Sul","lat":37.1366,"lon":-8.5378,"frequency":"90.1 FM","priority":"Média","objectives":["Drive-to-store","Campanhas locais"],"site":"https://www.alvorfm.com/","live":"https://www.alvorfm.com/","pointType":"Cidade/sede de referência","jomZone":"Portimão","coverageText":"Cobertura local no barlavento algarvio, centrada em Alvor/Portimão.","coverageBasis":"APR e fontes públicas identificam Alvor FM no concelho de Portimão, 90.1 FM.","sourceLabel":"Alvor FM / APR","sourceUrl":"https://apradiodifusao.pt/directories/radio-alvor-fm/","coverageCenters":[{"label":"Portimão / Alvor","lat":37.1366,"lon":-8.5378,"radiusKm":25,"x":188.78,"y":841.08,"r":35.43}],"color":"#047857","x":188.78,"y":841.08,"labelDx":14,"labelDy":-4,"labelSide":"right"}];
+var nationalRadios=[{"name":"Rádio Comercial","site":"https://radiocomercial.pt/","live":"https://radiocomercial.pt/","coverage":"FM nacional: lista extensa de frequências por distrito em Portugal Continental.","sourceLabel":"Rádio Comercial / Frequências","sourceUrl":"https://radiocomercial.pt/frequencias"},{"name":"Rádio M80","site":"https://m80.pt/","live":"https://m80.pt/","coverage":"FM nacional: frequências em Braga, Vila Real, Bragança, Porto, Aveiro, Viseu, Guarda, Coimbra, Leiria, Santarém, Portalegre, Lisboa, Setúbal, Évora, Beja e Faro.","sourceLabel":"M80 / Frequências","sourceUrl":"https://m80.pt/frequencias"},{"name":"TSF","site":"https://www.tsf.pt/","live":"https://www.tsf.pt/","coverage":"Cobertura FM nacional por rede de frequências TSF; player “Ouvir em Direto” disponível nas páginas TSF.","sourceLabel":"TSF / Frequências","sourceUrl":"https://www.tsf.pt/frequencias"},{"name":"Rádio Renascença","site":"https://rr.pt/","live":"https://rr.pt/","coverage":"Rede nacional de frequências em Portugal Continental e ilhas.","sourceLabel":"RR / frequências via MyRadioOnline","sourceUrl":"https://myradioonline.pt/renascenca"},{"name":"RFM","site":"https://rfm.pt/","live":"https://rfm.pt/ouvir-emissao-rfm","coverage":"Rede nacional de frequências; emissão online oficial RFM.","sourceLabel":"RFM / Frequências e ouvir emissão","sourceUrl":"https://rfm.pt/frequencias.asp"},{"name":"Mega Hits","site":"https://megahits.fm/","live":"https://megahits.fm/emissao_online_pub.aspx","coverage":"Presença nas principais cidades: Lisboa, Porto, Coimbra, Sintra, Aveiro, Braga, Viseu e Algarve.","sourceLabel":"Mega Hits / Sobre Nós","sourceUrl":"https://megahits.fm/sobre-nos"},{"name":"CM Rádio","site":"https://www.cmjornal.pt/cmr","live":"https://www.cmjornal.pt/cmr/streaming-radio","coverage":"FM em Lisboa 90.4 e Porto 94.8, com complemento digital/online.","sourceLabel":"CM Rádio / Ficha técnica e streaming","sourceUrl":"https://www.cmjornal.pt/cmr/institucional/detalhe/cmr-ficha-tecnica"}];
+var regionFilter='Todas',objectiveFilter='Todos',selectedId=null,showCoverage=true,showLabels=true,northMode=false;
+var mapWrap=document.getElementById('mapWrap'),nationalCover=document.getElementById('nationalCover'),nationalNote=document.getElementById('nationalNote'),detail=document.getElementById('detail'),visibleList=document.getElementById('visibleList');
+
+function addEvent(el,type,fn){if(!el)return;if(el.addEventListener)el.addEventListener(type,fn,false);else if(el.attachEvent)el.attachEvent('on'+type,fn);}
+function setMapHeight(){var w=mapWrap.offsetWidth||360;var h=Math.round(w*mapHeight/mapWidth);if(h<560)h=560;if(h>920)h=920;mapWrap.style.height=h+'px';}
+function escapeHtml(str){if(str===null||str===undefined)return '';return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+function hasObjective(radio,obj){if(obj==='Todos')return true;if(obj==='Campanhas nacionais')return false;var arr=radio.objectives||[];for(var i=0;i<arr.length;i++){if(arr[i]===obj)return true;}return false;}
+function visibleRegionalRadio(r){if(regionFilter==='Nacionais')return false;if(regionFilter!=='Todas'&&regionFilter!=='Regionais'&&r.region!==regionFilter)return false;if(!hasObjective(r,objectiveFilter))return false;if(northMode&&r.region!=='Norte')return false;return true;}
+function nationalVisible(){if(regionFilter==='Nacionais')return true;if(objectiveFilter==='Campanhas nacionais')return true;if(regionFilter==='Todas'&&objectiveFilter==='Todos')return true;return false;}
+function getRadio(id){for(var i=0;i<radios.length;i++){if(radios[i].id===id)return radios[i];}return null;}
+function elementHasObjective(el,obj){if(obj==='Todos')return true;if(obj==='Campanhas nacionais')return false;var s=el.getAttribute('data-objectives')||'';return ('|'+s+'|').indexOf('|'+obj+'|')>=0;}
+function shouldShowElement(el){var reg=el.getAttribute('data-region');if(regionFilter==='Nacionais')return false;if(regionFilter!=='Todas'&&regionFilter!=='Regionais'&&reg!==regionFilter)return false;if(!elementHasObjective(el,objectiveFilter))return false;if(northMode&&reg!=='Norte')return false;return true;}
+function setDisplayByClass(cls,show){var els=document.getElementsByClassName(cls);for(var i=0;i<els.length;i++){els[i].style.display=show?'block':'none';}}
+function renderMapElements(){
+  setMapHeight();
+  var body=document.body;
+  var state=[];
+  if(regionFilter==='Nacionais')state.push('state-region-national');
+  else if(regionFilter==='Norte')state.push('state-region-norte');
+  else if(regionFilter==='Centro')state.push('state-region-centro');
+  else if(regionFilter==='Lisboa e Vale do Tejo')state.push('state-region-lvt');
+  else if(regionFilter==='Sul')state.push('state-region-sul');
+
+  if(objectiveFilter==='Notoriedade')state.push('state-objective-notoriedade');
+  else if(objectiveFilter==='Drive-to-store')state.push('state-objective-drive');
+  else if(objectiveFilter==='Campanhas locais')state.push('state-objective-locais');
+  else if(objectiveFilter==='Campanhas nacionais')state.push('state-objective-national');
+  else if(objectiveFilter==='Aberturas / remodelações')state.push('state-objective-aberturas');
+
+  if(!showCoverage)state.push('state-no-coverage');
+  if(!showLabels)state.push('state-no-labels');
+  if(northMode)state.push('state-north-mode');
+  if(nationalVisible())state.push('state-show-national');
+
+  body.className=state.join(' ');
+
+  var markers=document.querySelectorAll('.marker-el');
+  for(var i=0;i<markers.length;i++){
+    var rid=markers[i].getAttribute('data-radio');
+    if(rid===selectedId)markers[i].classList.add('selected');
+    else markers[i].classList.remove('selected');
+  }
+
+  // Explicit repaint for Safari and iOS WebView/Quick Look.
+  var map=document.getElementById('mapWrap');
+  if(map){ void map.offsetHeight; map.style.webkitTransform='translateZ(0)'; }
+}
+function priorityBadge(priority){var cls='priority-complementar';if(priority==='Alta')cls='priority-alta';else if(priority==='Média')cls='priority-media';return '<span class="badge '+cls+'">Prioridade '+escapeHtml(priority)+'</span>';}
+function centersText(r){var centers=r.coverageCenters||[],out=[];for(var i=0;i<centers.length;i++){out.push(centers[i].label+' ('+centers[i].radiusKm+' km)');}return out.join('; ');}
+function visibleRegionalRadios(){var out=[];for(var i=0;i<radios.length;i++){if(visibleRegionalRadio(radios[i]))out.push(radios[i]);}return out;}
+function activeTitle(){if(regionFilter==='Nacionais'||objectiveFilter==='Campanhas nacionais')return 'Rádios nacionais';if(regionFilter==='Todas'&&objectiveFilter==='Todos')return 'Cobertura total';if(regionFilter!=='Todas'&&regionFilter!=='Regionais')return regionFilter;if(objectiveFilter!=='Todos')return objectiveFilter;return 'Rádios regionais';}
+function summaryText(){if(regionFilter==='Nacionais'||objectiveFilter==='Campanhas nacionais')return 'Camada de cobertura transversal para campanhas de notoriedade e pressão comercial nacional.';if(regionFilter==='Norte')return 'O Norte concentra a maior densidade de rádios regionais, cobrindo Minho, Grande Porto, Tâmega e Sousa, Douro e Trás-os-Montes.';if(regionFilter==='Centro')return 'O Centro apresenta cobertura equilibrada entre litoral e interior, incluindo Aveiro / Ovar, Coimbra, Viseu, Guarda, Covilhã, Castelo Branco, Batalha e Caldas da Rainha.';if(regionFilter==='Lisboa e Vale do Tejo')return 'Lisboa e Vale do Tejo cobre Grande Lisboa, Margem Sul e eixo Santarém / Alverca.';if(regionFilter==='Sul')return 'O Sul tem presença seletiva em Évora e Portimão, com potencial de reforço futuro.';return 'A JOM combina cobertura nacional para notoriedade e alcance com rádios regionais para proximidade, campanhas locais e drive-to-store.';}
+function renderDetail(){
+  var selected=selectedId?getRadio(selectedId):null;
+  if(selected&&!visibleRegionalRadio(selected))selected=null;
+  if(regionFilter==='Nacionais'||objectiveFilter==='Campanhas nacionais'){var links='',sources='';for(var n=0;n<nationalRadios.length;n++){links+='<a href="'+nationalRadios[n].live+'" target="_blank" rel="noopener">Ouvir '+escapeHtml(nationalRadios[n].name)+'</a>';sources+='<p><strong>'+escapeHtml(nationalRadios[n].name)+':</strong> '+escapeHtml(nationalRadios[n].coverage)+' <a href="'+nationalRadios[n].sourceUrl+'" target="_blank" rel="noopener">Fonte</a></p>';}detail.innerHTML='<h3>Rádios Nacionais</h3><span class="badge">Portugal Continental</span><span class="badge">'+nationalRadios.length+' meios</span><p>Camada nacional para notoriedade, alcance e pressão comercial. A CM Rádio é tratada com a nuance Lisboa/Porto FM + digital.</p><div class="links">'+links+'</div><div class="section-title">Notas de cobertura</div><div class="source-list">'+sources+'</div>';return;}
+  if(selected){var site=selected.site?'<a href="'+selected.site+'" target="_blank" rel="noopener">Site oficial</a>':'<span>Site por validar</span>';var live=selected.live?'<a href="'+selected.live+'" target="_blank" rel="noopener">Ouvir em direto</a>':'<span>Emissão por validar</span>';var source=selected.sourceUrl?'<a href="'+selected.sourceUrl+'" target="_blank" rel="noopener">Fonte de cobertura</a>':'';detail.innerHTML='<h3>'+escapeHtml(selected.name)+'</h3><span class="badge">Regional</span><span class="badge">'+escapeHtml(selected.region)+'</span>'+priorityBadge(selected.priority)+'<table class="table-mini"><tr><td>Zona JOM</td><td>'+escapeHtml(selected.jomZone)+'</td></tr><tr><td>Ponto no mapa</td><td>'+escapeHtml(selected.pointType)+' — '+escapeHtml(selected.city)+'</td></tr><tr><td>Frequência</td><td>'+escapeHtml(selected.frequency)+'</td></tr><tr><td>Objetivos</td><td>'+escapeHtml((selected.objectives||[]).join(', '))+'</td></tr></table><p><strong>Cobertura / influência:</strong> '+escapeHtml(selected.coverageText)+'</p><p><strong>Base usada:</strong> '+escapeHtml(selected.coverageBasis)+'</p><p><strong>Centros de cobertura no mapa:</strong> '+escapeHtml(centersText(selected))+'</p><div class="links">'+site+live+source+'</div>';return;}
+  var visible=visibleRegionalRadios();detail.innerHTML='<h3>'+escapeHtml(activeTitle())+'</h3><p>'+escapeHtml(summaryText())+'</p><div class="stats"><div class="stat"><strong>'+visible.length+'</strong><span>regionais visíveis</span></div><div class="stat"><strong>'+(nationalVisible()?nationalRadios.length:0)+'</strong><span>nacionais visíveis</span></div><div class="stat"><strong>'+(showCoverage?'ON':'OFF')+'</strong><span>coberturas</span></div></div><div class="section-title">Como ler</div><p>Os círculos variam consoante a informação pública disponível: concelhos declarados, múltiplas frequências, emissores ou apenas presença local. Os rótulos podem ser ocultados para leitura mais limpa.</p>';
+}
+function renderList(){visibleList.innerHTML='';if(regionFilter==='Nacionais'||objectiveFilter==='Campanhas nacionais'){for(var i=0;i<nationalRadios.length;i++){(function(n){var item=document.createElement('button');item.setAttribute('type','button');item.className='list-item';item.innerHTML='<span class="bullet" style="background:var(--jom)"></span><strong>'+escapeHtml(n.name)+'</strong><small>'+escapeHtml(n.coverage)+'</small>';addEvent(item,'click',function(){window.open(n.live,'_blank');});visibleList.appendChild(item);})(nationalRadios[i]);}return;}var visible=visibleRegionalRadios();for(var j=0;j<visible.length;j++){(function(radio){var item=document.createElement('button');item.setAttribute('type','button');item.className='list-item';item.innerHTML='<span class="bullet" style="background:'+radio.color+'"></span><strong>'+escapeHtml(radio.name)+'</strong><small>'+escapeHtml(radio.zone+' · '+radio.region+' · '+radio.priority)+'</small>';addEvent(item,'click',function(){selectedId=radio.id;render();});visibleList.appendChild(item);})(visible[j]);}}
+function render(){renderMapElements();renderDetail();renderList();}
+function activateGroup(containerId,attrName,value){var buttons=document.getElementById(containerId).getElementsByTagName('button');for(var i=0;i<buttons.length;i++){var v=buttons[i].getAttribute(attrName);buttons[i].className=buttons[i].className.replace(/\s?active/g,'')+(v===value?' active':'');}}
+function bindTap(container,handler){
+  var lastTouch=0;
+  addEvent(container,'touchend',function(e){
+    var target=e.target;
+    while(target&&target!==container&&target.tagName!=='BUTTON')target=target.parentNode;
+    if(!target||target===container)return;
+    lastTouch=Date.now();
+    if(e.preventDefault)e.preventDefault();
+    handler(target);
+  });
+  addEvent(container,'click',function(e){
+    if(Date.now()-lastTouch<700)return;
+    var target=e.target;
+    while(target&&target!==container&&target.tagName!=='BUTTON')target=target.parentNode;
+    if(!target||target===container)return;
+    handler(target);
+  });
+}
+function setupButtons(){
+  bindTap(document.getElementById('regionControls'),function(btn){
+    regionFilter=btn.getAttribute('data-region'); selectedId=null;
+    activateGroup('regionControls','data-region',regionFilter); render();
+  });
+  bindTap(document.getElementById('objectiveControls'),function(btn){
+    objectiveFilter=btn.getAttribute('data-objective'); selectedId=null;
+    activateGroup('objectiveControls','data-objective',objectiveFilter); render();
+  });
+  bindTap(document.getElementById('markerLayer'),function(btn){
+    if((' '+btn.className+' ').indexOf(' marker-el ')<0)return;
+    selectedId=btn.getAttribute('data-radio'); render();
+  });
+  var toggleRow=document.getElementById('toggleCoverage').parentNode;
+  bindTap(toggleRow,function(btn){
+    if(btn.id==='toggleCoverage'){
+      showCoverage=!showCoverage; btn.innerHTML=showCoverage?'Ocultar coberturas':'Mostrar coberturas'; render();
+    }else if(btn.id==='toggleLabels'){
+      showLabels=!showLabels; btn.innerHTML=showLabels?'Ocultar rótulos':'Mostrar rótulos'; render();
+    }else if(btn.id==='toggleNorth'){
+      northMode=!northMode; btn.innerHTML=northMode?'Sair do modo Norte':'Modo leitura Norte'; render();
+    }
+  });
+  addEvent(window,'resize',function(){setTimeout(render,100);});
+  addEvent(window,'orientationchange',function(){setTimeout(render,250);});
+}
+setupButtons();render();
+</script>
+
+<script>
+(function(){
+  function showPortalView(id){
+    var views=document.querySelectorAll('.portal-view');
+    for(var i=0;i<views.length;i++) views[i].classList.remove('active');
+    var target=document.getElementById(id); if(target) target.classList.add('active');
+    var nav=document.querySelectorAll('#portalNav button');
+    for(var j=0;j<nav.length;j++) nav[j].classList.toggle('active',nav[j].getAttribute('data-view')===id);
+    window.scrollTo(0,0);
+    if(id==='radioView'){setTimeout(function(){try{render();}catch(e){}},60);}
+  }
+
+  function applyRadioPreset(t){
+    var mode=t&&t.getAttribute?t.getAttribute('data-radio-mode'):null;
+    if(!mode)return;
+    try{
+      regionFilter=(mode==='national')?'Nacionais':'Regionais';
+      objectiveFilter='Todos'; selectedId=null;
+      activateGroup('regionControls','data-region',regionFilter);
+      activateGroup('objectiveControls','data-objective',objectiveFilter);
+    }catch(e){}
+  }
+  function bindPortal(el){
+    var lastTouch=0;
+    el.addEventListener('touchend',function(e){var t=e.target.closest('[data-view],[data-open]');if(!t)return;lastTouch=Date.now();e.preventDefault();applyRadioPreset(t);showPortalView(t.getAttribute('data-view')||t.getAttribute('data-open'));},{passive:false});
+    el.addEventListener('click',function(e){if(Date.now()-lastTouch<700)return;var t=e.target.closest('[data-view],[data-open]');if(!t)return;applyRadioPreset(t);showPortalView(t.getAttribute('data-view')||t.getAttribute('data-open'));});
+  }
+  bindPortal(document.querySelector('.portal-shell'));
+  window.showPortalView=showPortalView;
+})();
+</script>
+</body>
+</html>
